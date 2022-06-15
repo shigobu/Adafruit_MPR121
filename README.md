@@ -1,3 +1,13 @@
+このライブラリは、通信に Raspberry Pi Pico SDK を使用するように変更しています。
+
+PlatformIOでMPR121を使う場合に必要になります。  
+Arduino IDE と Arduino-Pico でMPR121を使う場合は、Adafruitのオリジナルが使用できます。  
+
+This library has been modified to use the Raspberry Pi Pico SDK for communication.
+
+This is required when using the MPR121 with PlatformIO.  
+If you are using the MPR121 with Arduino IDE and Arduino-Pico, you can use the Adafruit original.
+
 # Adafruit MPR121 Library [![Build Status](https://github.com/adafruit/Adafruit_MPR121/workflows/Arduino%20Library%20CI/badge.svg)](https://github.com/adafruit/Adafruit_MPR121/actions)
 
 
