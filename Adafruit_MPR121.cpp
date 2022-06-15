@@ -33,33 +33,39 @@
 
 /*!
  *  @brief      Default constructor
+ *  @param    i2caddr
+ *            the i2c address the device can be found on. Defaults to 0x5A.
+ *  @param    *theWire
+ *            i2c instance
  */
-Adafruit_MPR121::Adafruit_MPR121() {}
+Adafruit_MPR121::Adafruit_MPR121(uint8_t i2caddr, i2c_inst_t *theWire, int SDA, int SCL, bool enablePullup, uint32_t speed_Hz) {
+  i2c_dev = theWire;
+  _sda = SDA;
+  _scl = SCL;
+  _speed = speed_Hz;
+  _enablePullup = enablePullup;
+}
 
 /*!
  *  @brief    Begin an MPR121 object on a given I2C bus. This function resets
  *            the device and writes the default settings.
- *  @param    i2caddr
- *            the i2c address the device can be found on. Defaults to 0x5A.
- *  @param    *theWire
- *            Wire object
  *  @param    touchThreshold
  *            touch detection threshold value
  *  @param    releaseThreshold
  *            release detection threshold value
  *  @returns  true on success, false otherwise
  */
-bool Adafruit_MPR121::begin(uint8_t i2caddr, TwoWire *theWire,
-                            uint8_t touchThreshold, uint8_t releaseThreshold) {
+bool Adafruit_MPR121::begin(uint8_t touchThreshold, uint8_t releaseThreshold) {
 
-  if (i2c_dev) {
-    delete i2c_dev;
+  gpio_set_function(_sda, GPIO_FUNC_I2C);
+  gpio_set_function(_scl, GPIO_FUNC_I2C);
+  if (_enablePullup)
+  {
+    gpio_pull_up(_sda);
+    gpio_pull_up(_scl);
   }
-  i2c_dev = new Adafruit_I2CDevice(i2caddr, theWire);
 
-  if (!i2c_dev->begin()) {
-    return false;
-  }
+  i2c_init(i2c_dev, _speed);
 
   // soft reset
   writeRegister(MPR121_SOFTRESET, 0x63);
