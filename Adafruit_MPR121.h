@@ -100,6 +100,7 @@ public:
   void setThresholds(uint8_t touch, uint8_t release);
 
 private:
+  uint8_t _i2caddr = MPR121_I2CADDR_DEFAULT;
   i2c_inst_t *i2c_dev = NULL;
   int _sda = 0;
   int _scl = 1;

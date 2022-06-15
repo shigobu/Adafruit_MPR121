@@ -39,6 +39,7 @@
  *            i2c instance
  */
 Adafruit_MPR121::Adafruit_MPR121(uint8_t i2caddr, i2c_inst_t *theWire, int SDA, int SCL, bool enablePullup, uint32_t speed_Hz) {
+  _i2caddr = i2caddr;
   i2c_dev = theWire;
   _sda = SDA;
   _scl = SCL;
@@ -204,9 +205,11 @@ uint16_t Adafruit_MPR121::touched(void) {
  *  @returns    the 8 bit value that was read.
  */
 uint8_t Adafruit_MPR121::readRegister8(uint8_t reg) {
-  Adafruit_BusIO_Register thereg = Adafruit_BusIO_Register(i2c_dev, reg, 1);
-
-  return (thereg.read());
+  uint8_t buf;
+  i2c_write_blocking(i2c_dev, _i2caddr, &reg, 1, true);
+  i2c_read_blocking(i2c_dev, _i2caddr, &buf, 1, false);
+  
+  return buf;
 }
 
 /*!
@@ -215,10 +218,19 @@ uint8_t Adafruit_MPR121::readRegister8(uint8_t reg) {
  *  @returns    the 16 bit value that was read.
  */
 uint16_t Adafruit_MPR121::readRegister16(uint8_t reg) {
-  Adafruit_BusIO_Register thereg =
-      Adafruit_BusIO_Register(i2c_dev, reg, 2, LSBFIRST);
+  uint8_t buffer[2];
+  uint8_t width = sizeof(buffer) / sizeof(buffer[0]);
+  i2c_write_blocking(i2c_dev, _i2caddr, &reg, 1, true);
+  i2c_read_blocking(i2c_dev, _i2caddr, buffer, width, false);
 
-  return (thereg.read());
+  //LSBFIRSTなので、変換
+  uint16_t value = 0;
+  for (int i = 0; i < width; i++) {
+    value <<= 8;
+    value |= buffer[width - i - 1];
+  }
+
+  return value;
 }
 
 /*!
@@ -231,24 +243,30 @@ void Adafruit_MPR121::writeRegister(uint8_t reg, uint8_t value) {
   bool stop_required = true;
 
   // first get the current set value of the MPR121_ECR register
-  Adafruit_BusIO_Register ecr_reg =
-      Adafruit_BusIO_Register(i2c_dev, MPR121_ECR, 1);
+  uint8_t ecr_backup;
+  i2c_write_blocking(i2c_dev, _i2caddr, &MPR121_ECR, 1, true);
+  i2c_read_blocking(i2c_dev, _i2caddr, &ecr_backup, 1, false);
 
-  uint8_t ecr_backup = ecr_reg.read();
   if ((reg == MPR121_ECR) || ((0x73 <= reg) && (reg <= 0x7A))) {
     stop_required = false;
   }
 
+  uint8_t writeVal[2];
   if (stop_required) {
     // clear this register to set stop mode
-    ecr_reg.write(0x00);
+    writeVal[0] = MPR121_ECR;
+    writeVal[1] = 0x00;
+    i2c_write_blocking(i2c_dev, _i2caddr, writeVal, sizeof(writeVal), false);
   }
 
-  Adafruit_BusIO_Register the_reg = Adafruit_BusIO_Register(i2c_dev, reg, 1);
-  the_reg.write(value);
+  writeVal[0] = reg;
+  writeVal[1] = value;
+  i2c_write_blocking(i2c_dev, _i2caddr, writeVal, sizeof(writeVal), false);
 
   if (stop_required) {
     // write back the previous set ECR settings
-    ecr_reg.write(ecr_backup);
+    writeVal[0] = MPR121_ECR;
+    writeVal[1] = ecr_backup;
+    i2c_write_blocking(i2c_dev, _i2caddr, writeVal, sizeof(writeVal), false);
   }
 }
