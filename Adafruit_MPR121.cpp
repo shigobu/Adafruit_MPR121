@@ -27,6 +27,9 @@
  */
 
 #include "Adafruit_MPR121.h"
+#include "hardware/i2c.h"
+#include "pico/stdlib.h"
+#include "time.h"
 
 // uncomment to use autoconfig !
 //#define AUTOCONFIG // use autoconfig (Yes it works pretty well!)
@@ -112,8 +115,8 @@ bool Adafruit_MPR121::begin(uint8_t touchThreshold, uint8_t releaseThreshold) {
 #endif
 
   // enable X electrodes and start MPR121
-  byte ECR_SETTING =
-      B10000000 + 12; // 5 bits for baseline tracking & proximity disabled + X
+  uint8_t ECR_SETTING =
+      0b10000000 + 12; // 5 bits for baseline tracking & proximity disabled + X
                       // amount of electrodes running (12)
   writeRegister(MPR121_ECR, ECR_SETTING); // start with above ECR setting
 
@@ -243,8 +246,9 @@ void Adafruit_MPR121::writeRegister(uint8_t reg, uint8_t value) {
   bool stop_required = true;
 
   // first get the current set value of the MPR121_ECR register
+  uint8_t ecrReg = MPR121_ECR;
   uint8_t ecr_backup;
-  i2c_write_blocking(i2c_dev, _i2caddr, &MPR121_ECR, 1, true);
+  i2c_write_blocking(i2c_dev, _i2caddr, &ecrReg, 1, true);
   i2c_read_blocking(i2c_dev, _i2caddr, &ecr_backup, 1, false);
 
   if ((reg == MPR121_ECR) || ((0x73 <= reg) && (reg <= 0x7A))) {
